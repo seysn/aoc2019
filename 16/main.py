@@ -1,6 +1,8 @@
 class Fft(object):
-    def __init__(self, inp: str):
+    def __init__(self, inp: str, offset=0):
         self.signal = list(map(int, list(inp.strip())))
+        self.offset = offset
+        self.length = len(inp)
         self.last_digit = None
 
     def get_pattern(self, pos=0, base=[0, 1, 0, -1]):
@@ -16,9 +18,12 @@ class Fft(object):
         return res[1:len(self.signal)+2]
 
     def digit(self, pos):
-        if pos * 2 > 320000:
+        if pos * 2 > self.length:
             if self.last_digit is not None:
-                self.last_digit = self.last_digit + self.signal[pos]
+                tmp = self.last_digit - self.signal[pos-1]
+                if tmp < 0:
+                    tmp += 10
+                self.last_digit = tmp
             else:
                 self.last_digit = int(str(sum(self.signal[pos:]))[-1])
             return self.last_digit
@@ -27,16 +32,16 @@ class Fft(object):
         self.last_digit = int(str(sum(tmp))[-1])
         return self.last_digit
 
-    def phase(self, offset=0):
-        res = []
-        for i in range(offset, len(self.signal)):
-            # res.append(int(str(sum(map(lambda x, y: x * y, self.get_pattern(i)[offset:], self.signal[offset:])))[-1]))
+    def phase(self):
+        res = [0] * self.offset
+        for i in range(self.offset, len(self.signal)):
             res.append(self.digit(i))
+        self.last_digit = None
         self.signal = res
 
-    def run(self, times=100, offset=0):
+    def run(self, times=100):
         for _ in range(times):
-            self.phase(offset)
+            self.phase()
         return "".join(map(str, self.signal))
 
 def teq(expected, actual):
@@ -58,7 +63,7 @@ print("> tests part1 done")
 def part2(inp):
     print(">> running part2")
     offset = int(inp[:7])
-    return Fft(inp * 10000).run(offset=offset)[offset:offset+8]
+    return Fft(inp * 10000, offset).run()[offset:offset+8]
 
 teq("84462026", part2("03036732577212944063491565474664"))
 teq("78725270", part2("02935109699940807407585447034323"))
@@ -68,7 +73,7 @@ print("> tests part2 done")
 if __name__ == "__main__":
     inp = None
     with open("16/input.txt") as f:
-        inp = f.readline()
+        inp = f.readline().strip()
 
-    #print(part1(inp)) # 22122816
-    print(part2(inp))
+    print(part1(inp)) # 22122816
+    print(part2(inp)) # 41402171
